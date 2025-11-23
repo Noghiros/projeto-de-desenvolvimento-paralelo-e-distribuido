@@ -54,11 +54,22 @@ Esse modelo é amplamente usado para estudar sistemas críticos, dinâmica de pr
 
 ---
 
-## 👥 Integrantes (Grupo 2)
+# 👥 Integrantes e suas contribuições (Grupo 2)
 
 * [<img src="https://i.imgur.com/6wtHdzd.png" width="30">](https://github.com/felipebataglini) **Felipe de Oliveira Guimarães Bataglini**
+- Implementação versão distribuída
+- Comunicação via sockets
+- Testes e validação
+  
 * [<img src="https://i.imgur.com/fA4JpJg.png" width="30">](https://github.com/JoaoVBLaneiro) **João Vitor Briganti Laneiro**
+- Implementação versão paralela com threads
+- Sistema de logging e CSV
+- Documentação técnica
+  
 * [<img src="https://i.imgur.com/0ldubtT.png" width="30">](https://github.com/Noghiros) **Stefano Calheiros Stringhini**
+- Implementação versão sequencial
+- Desenvolvimento do sistema de benchmark
+- Análise de resultados
 
 ---
 
@@ -99,6 +110,18 @@ Ferramentas de medição:
 * arquivos `.csv` gerados automaticamente
 * `plotar_graficos.py` para gerar gráficos
 
+## 💻 Ambiente de Testes
+
+### Hardware
+- **CPU**: [Intel(R) Core(TM) i3-7100U CPU @ 2.40GHz   2.40 GHz]
+- **RAM**: [12,0 GB DDR4]
+- **Rede**: [Localhost (127.0.0.1) para testes distribuídos]
+- **Sistema**: [Windows 10 Home]
+
+### Software
+- **Python**: 3.12.1
+- **Bibliotecas**: numpy 2.2.6, matplotlib 3.1.0.7
+
 ---
 
 ## ▶️ Etapas para Execução
@@ -135,7 +158,46 @@ python plotar_graficos.py
 
 ---
 
-## 📚 Referências
+# 📊 Resultados Obtidos
+
+### Tabela Comparativa de Tempos (segundos)
+| Tamanho | Sequencial | 2 Threads | 4 Threads | 2 Workers | 4 Workers |
+|---------|------------|-----------|-----------|-----------|-----------|
+| 256×256 | 12.45s     | 8.23s     | 6.15s     | 9.87s     | 7.42s     |
+| 512×512 | 48.76s     | 28.91s    | 18.34s    | 32.45s    | 22.18s    |
+| 1024×1024| 195.32s   | 112.56s   | 78.91s     | 125.67s   | 89.45s   |
+
+### Gráficos de Desempenho
+![Gráfico Comparativo](tempo_comparativo.png)
+
+### Análise de Speedup
+| Configuração | Speedup (1024×1024) | Eficiência |
+|--------------|---------------------|------------|
+| 2 Threads    | 1.73x               | 86.5%      |
+| 4 Threads    | 2.47x               | 61.7%      |
+| 2 Workers    | 1.55x               | 77.5%      |
+| 4 Workers    | 2.18x               | 54.5%      |
+
+## ⚠️ Limitações Identificadas
+
+### Paralela (Threads)
+- **GIL do Python** limita ganho real com múltiplas threads
+- **Sincronização por barrier** a cada passo causa overhead
+- **Divisão estática** pode causar desbalanceamento
+
+### Distribuída
+- **Comunicação TCP** entre workers é custosa
+- **Ghost rows** duplicam processamento nas bordas
+- **Latência de rede** em ambientes não-localhost
+
+### Melhorias Propostas
+- Usar **multiprocessing** em vez de threading
+- Implementar **divisão dinâmica** de carga
+- Usar **UDP** ou comunicação assíncrona
+
+---
+
+# 📚 Referências
 
 ### 📄 Modelo Forest Fire
 
