@@ -113,9 +113,9 @@ Ferramentas de medição:
 ## 💻 Ambiente de Testes
 
 ### Hardware
-- **CPU**: [Intel(R) Core(TM) i3-7100U CPU @ 2.40GHz   2.40 GHz]
+- **CPU**: [Intel Core i3-7100U CPU @ 2.40GHz - 2 Núcleos Físicos / 4 Threads Lógicas (Virtual Cores)]
 - **RAM**: [12,0 GB DDR4]
-- **Rede**: [Localhost (127.0.0.1) para testes distribuídos]
+- **Rede**: [Localhost (127.0.0.1) — Custo Zero de Latência Real, mas o overhead de serialização/socket é mensurado.]
 - **Sistema**: [Windows 10 Home]
 
 ### Software
@@ -161,39 +161,49 @@ python plotar_graficos.py
 # 📊 Resultados Obtidos
 
 ### Tabela Comparativa de Tempos (segundos)
-| Tamanho | Sequencial | 2 Threads | 4 Threads | 2 Workers | 4 Workers |
-|---------|------------|-----------|-----------|-----------|-----------|
-| 256×256 | 12.45s     | 8.23s     | 6.15s     | 9.87s     | 7.42s     |
-| 512×512 | 48.76s     | 28.91s    | 18.34s    | 32.45s    | 22.18s    |
-| 1024×1024| 195.32s   | 112.56s   | 78.91s     | 125.67s   | 89.45s   |
+
+| Tamanho    | Sequencial | 2 Threads | 4 Threads | 2 Workers | 4 Workers |
+|------------|------------|-----------|-----------|-----------|-----------|
+| 256×256    | 0.96s      | 43.96s    | 44.37s    | 29.33s    | 24.07s    |
+| 512×512    | 3.26s      | 183.19s   | 182.33s   | 112.83s   | 90.23s    |
+| 1024×1024  | 9.30s      | 728.02s   | 771.74s   | 560.37s   | 357.11s   |
 
 ### Gráficos de Desempenho
-![Gráfico Comparativo](tempo_comparativo.png)
+<img width="800" height="500" alt="Gráfico Comparativo" src="https://github.com/user-attachments/assets/8b725016-9a0e-4603-ab0c-d92cd23b870e" />
 
 ### Análise de Speedup
-| Configuração | Speedup (1024×1024) | Eficiência |
-|--------------|---------------------|------------|
-| 2 Threads    | 1.73x               | 86.5%      |
-| 4 Threads    | 2.47x               | 61.7%      |
-| 2 Workers    | 1.55x               | 77.5%      |
-| 4 Workers    | 2.18x               | 54.5%      |
+
+| Configuração  | 256×256 | 512×512 | 1024×1024 | Eficiência |
+|---------------|---------|---------|-----------|------------|
+| 2 Threads     | 0.02x   | 0.02x   | 0.01x     | 1.0%       |
+| 4 Threads     | 0.02x   | 0.02x   | 0.01x     | 0.5%       |
+| 2 Workers     | 0.03x   | 0.03x   | 0.02x     | 1.5%       |
+| 4 Workers     | 0.04x   | 0.04x   | 0.03x     | 0.8%       |
 
 ## ⚠️ Limitações Identificadas
 
-### Paralela (Threads)
-- **GIL do Python** limita ganho real com múltiplas threads
-- **Sincronização por barrier** a cada passo causa overhead
-- **Divisão estática** pode causar desbalanceamento
+Os resultados mostram que as versões paralela e distribuída apresentaram desempenho inferior à versão sequencial, indicando **overhead excessivo** nas implementações atuais. 
+Isso se deve principalmente à sincronização frequente e custos de comunicação que superam os ganhos da paralelização, conforme detalhado abaixo:
 
-### Distribuída
-- **Comunicação TCP** entre workers é custosa
-- **Ghost rows** duplicam processamento nas bordas
-- **Latência de rede** em ambientes não-localhost
+* **Paralela (Threads): Slowdown Causado pelo GIL**
+  A simulação é classificada como CPU-bound (limitada pela capacidade de cálculo da CPU). O ganho de desempenho foi nulo devido ao Python Global Interpreter Lock (GIL).
+  - **Problema:** O GIL garante que apenas uma thread execute código Python por vez, impedindo o paralelismo real em CPUs multi-core. 
+  - **Consequência:** A implementação com threading incorre no alto custo de gerenciamento e sincronização de 4 threads, mas sem o benefício da execução simultânea, resultando em um enorme slowdown.
+  - **Resultado:** O tempo foi de 771.74s (4 Threads) contra a baseline sequencial de 9.30s.
 
-### Melhorias Propostas
-- Usar **multiprocessing** em vez de threading
-- Implementar **divisão dinâmica** de carga
-- Usar **UDP** ou comunicação assíncrona
+* **Distribuída (Sockets): Penalidade do Overhead de Comunicação**
+  - **Alto Custo para Granularidade Fina:** A troca de Ghost Rows em Sockets TCP a cada um dos 200 passos da simulação exige repetida serialização (numpy para bytes) e desserialização
+  - **Sincronização Excessiva:** Sincronização total e frequente entre todos os workers
+  - **Resultado:** Overhead de comunicação superior ao tempo de processamento sequencial
+
+## 🚀 Melhorias Propostas
+
+🔧 **Para Versão Paralela**:
+- Usar o módulo _multiprocessing_ (em vez de _threading_) para criar processos separados, cada um com sua própria instância do interpretador Python, permitindo a execução simultânea em múltiplos núcleos físicos.
+
+🔧 **Para Versão Distribuída**:
+- Usar bibliotecas otimizadas como MPI (Message Passing Interface) em vez de Sockets puros. MPI é projetado para transferência de grandes volumes de dados de forma eficiente em computação paralela e distribuída.
+- Buscar uma arquitetura de granularidade mais grossa (se o problema permitir), reduzindo a frequência de comunicação.
 
 ---
 
